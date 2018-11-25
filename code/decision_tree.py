@@ -28,7 +28,7 @@ class DecisionTree:
         self.y_train = y_train
 
         self.dt.fit(
-            self.x_train.values,
+            self.x_train,
             self.y_train
         )
         print("Training classifier.")

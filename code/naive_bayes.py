@@ -1,17 +1,16 @@
 # NAIVE BAYES SUPERVISED CLASSIFICATION ALGORITHM
 
-import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 
 
 class NaiveBayes:
     def __init__(self):
         self.x_train = None
-        self.x_test = None
         self.y_train = None
+        self.x_test = None
         self.y_test = None
         self.y_pred = None
+        self.accuracy = 0
         # Instantiate the Gaussian classifier
         self.gnb = GaussianNB()
 
@@ -22,10 +21,7 @@ class NaiveBayes:
         self.y_train = y_train
 
         # Train classifier.
-        self.gnb.fit(
-            self.x_train,
-            self.y_train
-        )
+        self.gnb.fit(self.x_train, self.y_train)
 
     # Test classifier on a test dataset.
     def test(self, x_test, y_test):
@@ -35,15 +31,15 @@ class NaiveBayes:
 
         # Test classifier.
         self.y_pred = self.gnb.predict(self.x_test)
-        performance = 100 * (1 - (self.y_test != self.y_pred).sum() / self.x_test.shape[0])
-        print("Performance: {}".format(performance))
+        self.accuracy = 1 - (self.y_test != self.y_pred).sum() / self.x_test.shape[0]
+        print("Performance: {}".format(self.accuracy))
 
     # Print results.
     def print_results(self):
         print("Number of mislabeled points out of a total {} points : {}, performance {:05.2f}%".format(
             self.x_test.shape[0],
             (self.y_test != self.y_pred).sum(),
-            100 * (1 - (self.y_test != self.y_pred).sum() / self.x_test.shape[0])
+            self.accuracy
             )
         )
 

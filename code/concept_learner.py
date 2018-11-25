@@ -5,7 +5,7 @@
 # Find Least General Generalization f a set of instances
 def lgg_conj(x, y):
     z = []
-    for i in range(0, len(x)):
+    for i in range(len(x)):
         if x[i] != y[i]:
             z.append(0)
         else:
@@ -16,7 +16,8 @@ def lgg_conj(x, y):
 # Initialize the learner with an array of instances.
 
 # DATA LOADING FROM SPAMBASE
-data = open("spambase.csv", "r")
+data = open("data\spambase.csv", "r")
+data.readline()
 instances = [line.rstrip('\n') for line in data]
 
 # DATA HANDLING

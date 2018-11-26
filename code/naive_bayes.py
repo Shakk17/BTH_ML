@@ -36,7 +36,7 @@ class NaiveBayes:
 
     # Print results.
     def print_results(self):
-        print("Number of mislabeled points out of a total {} points : {}, performance {:05.2f}%".format(
+        print("Number of mislabeled points out of a total {} points : {}, performance {:0.4f}".format(
             self.x_test.shape[0],
             (self.y_test != self.y_pred).sum(),
             self.accuracy

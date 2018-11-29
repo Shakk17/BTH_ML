@@ -2,6 +2,7 @@
 from time import time
 
 from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score, f1_score
 
 
 class NaiveBayes:
@@ -37,19 +38,20 @@ class NaiveBayes:
 
         # Test classifier.
         self.y_pred = self.gnb.predict(self.x_test)
-        self.accuracy = 1 - (self.y_test != self.y_pred).sum() / self.x_test.shape[0]
-        print("Performance: {}".format(self.accuracy))
+        self.accuracy = round(accuracy_score(self.y_test, self.y_pred), 4)
+        self.f_measure = round(f1_score(self.y_test, self.y_pred), 4)
 
     # Print results.
     def print_results(self):
-        print("Number of mislabeled points out of a total {} points : {}, performance {:0.4f}".format(
-            self.x_test.shape[0],
-            (self.y_test != self.y_pred).sum(),
-            self.accuracy
-            )
-        )
+        print("Training time: {} sec".format(self.train_time))
+        print("Accuracy: {}".format(self.accuracy))
+        print("F-measure: {}".format(self.f_measure))
+
 
 '''
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
 dataset = pd.read_csv("data/spambase.csv")
 features = list(dataset.drop("spam", axis=1))
 target = "spam"

@@ -2,6 +2,7 @@
 from time import time
 
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, f1_score
 
 
 class RandomForest:
@@ -33,18 +34,28 @@ class RandomForest:
         self.y_test = y_test
 
         self.y_pred = self.rf.predict(self.x_test)
-        self.accuracy = self.rf.score(self.x_test, self.y_test)
-        print("Accuracy is {}".format(self.accuracy))
+        self.accuracy = round(accuracy_score(self.y_test, self.y_pred), 4)
+        self.f_measure = round(f1_score(self.y_test, self.y_pred), 4)
+
+    # Print results.
+    def print_results(self):
+        print("Training time: {} sec".format(self.train_time))
+        print("Accuracy: {}".format(self.accuracy))
+        print("F-measure: {}".format(self.f_measure))
 
 
 '''
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
 dataset = pd.read_csv("data/spambase.csv")
 features = list(dataset.drop("spam", axis=1))
 target = "spam"
-x = rf.data[features]
-y = rf.data[target]
+x = dataset[features]
+y = dataset[target]
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.33)
 rf = RandomForest()
 rf.train(x_train, y_train)
 rf.test(x_test, y_test)
+rf.print_results()
 '''

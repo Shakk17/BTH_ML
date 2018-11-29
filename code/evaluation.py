@@ -3,6 +3,7 @@ import math as math
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold, train_test_split
+from scipy.stats import friedmanchisquare
 from prettytable import PrettyTable
 
 from decision_tree import DecisionTree
@@ -84,52 +85,60 @@ for train_index, test_index in skf.split(x_train, y_train):
 # Print statistics.
 headers = ["Fold", "Naive Bayes", "Decision Tree", "Random Forest"]
 table_types = ["TRAINING TIME", "ACCURACY", "F-MEASURES"]
+ranking_avg = {}
 # Table containing training times for each fold, for each algorithm.
 for type in table_types:
     print("\n++ {} ++".format(type))
+    # FOLDS
     table = [list(range(1, 11)),
              nb_dict[type],
              dt_dict[type],
              rf_dict[type]]
     print_table(transpose(table), headers)
+    # STATISTICS
     stat_table = [
         ["avg", "std"],
         [np.around(np.mean(nb_dict[type]), 4), np.around(np.std(nb_dict[type]), 4)],
         [np.around(np.mean(dt_dict[type]), 4), np.around(np.std(dt_dict[type]), 4)],
         [np.around(np.mean(rf_dict[type]), 4), np.around(np.std(rf_dict[type]), 4)]]
-    print_table(transpose(stat_table), headers)
+    stat_table = transpose(stat_table)
+    # FRIEDMAN TEST
+    ranking = []
+    for row in range(10):
+        array = np.array([
+            nb_dict[type][row],
+            dt_dict[type][row],
+            rf_dict[type][row]])
+        ranking.append(rank(array))
+    ranking_avg = [np.average(col) for col in np.transpose(ranking)]
+    ranking_avg.insert(0, "rank")
+    stat_table.append(ranking_avg)
+    print_table(stat_table, headers)
 
-# FRIEDMAN TEST
-ranking = []
-for row in range(10):
-    array = np.array([
-        nb_dict["ACCURACY"][row],
-        dt_dict["ACCURACY"][row],
-        rf_dict["ACCURACY"][row]
-    ])
-    ranking.append(rank(array))
-ranking_avg = []
-for col in np.transpose(ranking):
-    ranking_avg.append(np.average(col))
-print("Average Rank: {}".format(ranking_avg))
-
-# NEMENYI TEST
-# Number of algorithms.
-k = 3
-# Q value for alpha=0.05 and k=3
-q = 2.343
-# Calculate critical difference.
-cd = round(q * math.sqrt((k * (k + 1)) / 60), 4)
-print("Critical difference: {}".format(cd))
-print("Difference between Naive Bayes and Decision Tree: {}".format(
-    abs(ranking_avg[0] - ranking_avg[1])
-))
-reject_null_hyp(abs(ranking_avg[0] - ranking_avg[1]), cd)
-print("Difference between Decision Tree and Random Forest: {}".format(
-    abs(ranking_avg[1] - ranking_avg[2])
-))
-reject_null_hyp(abs(ranking_avg[1] - ranking_avg[2]), cd)
-print("Difference between Naive Bayes and Random Forest: {}".format(
-    abs(ranking_avg[0] - ranking_avg[2])
-))
-reject_null_hyp(abs(ranking_avg[0] - ranking_avg[2]), cd)
+    # NEMENYI TEST
+    # Number of algorithms.
+    k = 3
+    # Q value for alpha=0.05 and k=3
+    q = 2.343
+    # Friedman test.
+    stat, p = friedmanchisquare(nb_dict[type], dt_dict[type], rf_dict[type])
+    alpha = 0.05
+    if p > alpha:
+        print('FRIEDMAN TEST: Same distributions (fail to reject H0)')
+    else:
+        print('FRIEDMAN TEST: Different distributions (reject H0)')
+    # Calculate critical difference.
+    cd = round(q * math.sqrt((k * (k + 1)) / 60), 4)
+    print("\nNEMENYI TEST: Critical difference: {}".format(cd))
+    print("Difference between Naive Bayes and Decision Tree: {}".format(
+        abs(ranking_avg[1] - ranking_avg[2])
+    ))
+    reject_null_hyp(abs(ranking_avg[1] - ranking_avg[2]), cd)
+    print("Difference between Decision Tree and Random Forest: {}".format(
+        abs(ranking_avg[2] - ranking_avg[3])
+    ))
+    reject_null_hyp(abs(ranking_avg[2] - ranking_avg[3]), cd)
+    print("Difference between Naive Bayes and Random Forest: {}".format(
+        abs(ranking_avg[1] - ranking_avg[3])
+    ))
+    reject_null_hyp(abs(ranking_avg[1] - ranking_avg[3]), cd)

@@ -3,7 +3,7 @@ import math as math
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold, train_test_split
-from tabulate import tabulate
+from prettytable import PrettyTable
 
 from decision_tree import DecisionTree
 from naive_bayes import NaiveBayes
@@ -32,6 +32,17 @@ def reject_null_hyp(value, cd):
         print("There is NO performance difference between the two algorithms.")
 
 
+def print_table(table, headers):
+    p_table = PrettyTable(headers)
+    for t_row in table:
+        p_table.add_row(t_row)
+    print(p_table)
+
+
+def transpose(table):
+    return [[table[j][i] for j in range(len(table))] for i in range(len(table[0]))]
+
+
 dataset = pd.read_csv("data/spambase.csv")
 features = list(dataset.drop("spam", axis=1))
 target = "spam"
@@ -40,57 +51,66 @@ y = dataset[target]
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.10)
 
 nb = NaiveBayes()
-nb_accuracy = []
+nb_dict = {"TRAINING TIME": [], "ACCURACY": [], "F-MEASURES": []}
 dt = DecisionTree()
-dt_accuracy = []
+dt_dict = {"TRAINING TIME": [], "ACCURACY": [], "F-MEASURES": []}
 rf = RandomForest()
-rf_accuracy = []
+rf_dict = {"TRAINING TIME": [], "ACCURACY": [], "F-MEASURES": []}
 
 skf = StratifiedKFold(n_splits=10, shuffle=True)
+i_fold = 0
 for train_index, test_index in skf.split(x_train, y_train):
+    i_fold += 1
+    print("++ FOLD {} ++".format(i_fold))
     # NAIVE BAYES
     nb.train(x_train.values[train_index], y_train.values[train_index])
     nb.test(x_train.values[test_index], y_train.values[test_index])
-    nb_accuracy.append(nb.accuracy)
-    nb.print_results()
+    nb_dict["TRAINING TIME"].append(nb.train_time)
+    nb_dict["ACCURACY"].append(nb.accuracy)
+    nb_dict["F-MEASURES"].append(nb.f_measure)
     # DECISION TREE
     dt.train(x_train.values[train_index], y_train.values[train_index])
     dt.test(x_train.values[test_index], y_train.values[test_index])
-    dt_accuracy.append(dt.accuracy)
+    dt_dict["TRAINING TIME"].append(dt.train_time)
+    dt_dict["ACCURACY"].append(dt.accuracy)
+    dt_dict["F-MEASURES"].append(dt.f_measure)
     # RANDOM FOREST
     rf.train(x_train.values[train_index], y_train.values[train_index])
     rf.test(x_train.values[test_index], y_train.values[test_index])
-    rf_accuracy.append(rf.accuracy)
+    rf_dict["TRAINING TIME"].append(rf.train_time)
+    rf_dict["ACCURACY"].append(rf.accuracy)
+    rf_dict["F-MEASURES"].append(rf.f_measure)
 
+# Print statistics.
 headers = ["Fold", "Naive Bayes", "Decision Tree", "Random Forest"]
-table = np.array([list(range(1, 11)),
-                  nb_accuracy,
-                  dt_accuracy,
-                  rf_accuracy
-                  ])
-stat_table = [
-    ["avg", "st_dev"],
-    [np.mean(nb_accuracy), np.std(nb_accuracy)],
-    [np.mean(dt_accuracy), np.std(dt_accuracy)],
-    [np.mean(rf_accuracy), np.std(rf_accuracy)]
-]
-table = np.append(table, stat_table, axis=1)
+table_types = ["TRAINING TIME", "ACCURACY", "F-MEASURES"]
+# Table containing training times for each fold, for each algorithm.
+for type in table_types:
+    print("\n++ {} ++".format(type))
+    table = [list(range(1, 11)),
+             nb_dict[type],
+             dt_dict[type],
+             rf_dict[type]]
+    print_table(transpose(table), headers)
+    stat_table = [
+        ["avg", "std"],
+        [np.around(np.mean(nb_dict[type]), 4), np.around(np.std(nb_dict[type]), 4)],
+        [np.around(np.mean(dt_dict[type]), 4), np.around(np.std(dt_dict[type]), 4)],
+        [np.around(np.mean(rf_dict[type]), 4), np.around(np.std(rf_dict[type]), 4)]]
+    print_table(transpose(stat_table), headers)
 
 # FRIEDMAN TEST
 ranking = []
 for row in range(10):
     array = np.array([
-        nb_accuracy[row],
-        dt_accuracy[row],
-        rf_accuracy[row]
+        nb_dict["ACCURACY"][row],
+        dt_dict["ACCURACY"][row],
+        rf_dict["ACCURACY"][row]
     ])
     ranking.append(rank(array))
-
 ranking_avg = []
 for col in np.transpose(ranking):
     ranking_avg.append(np.average(col))
-table = table.T
-print(tabulate(table, headers, tablefmt="fancy_grid", floatfmt=".4f", stralign="center"))
 print("Average Rank: {}".format(ranking_avg))
 
 # NEMENYI TEST
@@ -99,17 +119,17 @@ k = 3
 # Q value for alpha=0.05 and k=3
 q = 2.343
 # Calculate critical difference.
-cd = q * math.sqrt((k*(k+1))/60)
+cd = round(q * math.sqrt((k * (k + 1)) / 60), 4)
 print("Critical difference: {}".format(cd))
 print("Difference between Naive Bayes and Decision Tree: {}".format(
-    abs(ranking_avg[0]-ranking_avg[1])
+    abs(ranking_avg[0] - ranking_avg[1])
 ))
-reject_null_hyp(abs(ranking_avg[0]-ranking_avg[1]), cd)
+reject_null_hyp(abs(ranking_avg[0] - ranking_avg[1]), cd)
 print("Difference between Decision Tree and Random Forest: {}".format(
-    abs(ranking_avg[1]-ranking_avg[2])
+    abs(ranking_avg[1] - ranking_avg[2])
 ))
-reject_null_hyp(abs(ranking_avg[1]-ranking_avg[2]), cd)
+reject_null_hyp(abs(ranking_avg[1] - ranking_avg[2]), cd)
 print("Difference between Naive Bayes and Random Forest: {}".format(
-    abs(ranking_avg[0]-ranking_avg[2])
+    abs(ranking_avg[0] - ranking_avg[2])
 ))
-reject_null_hyp(abs(ranking_avg[0]-ranking_avg[2]), cd)
+reject_null_hyp(abs(ranking_avg[0] - ranking_avg[2]), cd)

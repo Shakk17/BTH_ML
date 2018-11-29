@@ -1,4 +1,5 @@
 # NAIVE BAYES SUPERVISED CLASSIFICATION ALGORITHM
+from time import time
 
 from sklearn.naive_bayes import GaussianNB
 
@@ -10,7 +11,9 @@ class NaiveBayes:
         self.x_test = None
         self.y_test = None
         self.y_pred = None
+        self.train_time = 0
         self.accuracy = 0
+        self.f_measure = 0
         # Instantiate the Gaussian classifier
         self.gnb = GaussianNB()
 
@@ -21,7 +24,10 @@ class NaiveBayes:
         self.y_train = y_train
 
         # Train classifier.
+        t0 = time()
         self.gnb.fit(self.x_train, self.y_train)
+        t1 = time()
+        self.train_time = round(t1 - t0, 3)
 
     # Test classifier on a test dataset.
     def test(self, x_test, y_test):

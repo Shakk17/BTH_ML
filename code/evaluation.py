@@ -11,7 +11,7 @@ from naive_bayes import NaiveBayes
 from random_forest import RandomForest
 
 
-def rank(array):
+def rank(array, type):
     rank_array = [0 for x in range(len(array))]
     for i in range(len(array)):
         (r, s) = (1, 1)
@@ -21,6 +21,8 @@ def rank(array):
             if j != i and array[j] == array[i]:
                 s += 1
         rank_array[i] = r + (s - 1) / 2
+    if type == "TRAINING TIME":
+        return rank_array[::-1]
     return rank_array
 
 
@@ -33,10 +35,21 @@ def reject_null_hyp(value, cd):
         print("There is NO performance difference between the two algorithms.")
 
 
-def print_table(table, headers):
+def print_table(table, headers, rank):
     p_table = PrettyTable(headers)
+    fold = 1
     for t_row in table:
-        p_table.add_row(t_row)
+        if rank is not None:
+            i = 0
+            t_rank = []
+            for j in range(3):
+                t_rank.append("{} ({})".format(t_row[j+1], rank[i][j]))
+            i += 1
+            t_rank.insert(0, str(fold))
+            p_table.add_row(t_rank)
+        else:
+            p_table.add_row(t_row)
+        fold += 1
     print(p_table)
 
 
@@ -94,7 +107,15 @@ for type in table_types:
              nb_dict[type],
              dt_dict[type],
              rf_dict[type]]
-    print_table(transpose(table), headers)
+    # Ranking of results for each fold.
+    ranking = []
+    for row in range(10):
+        array = np.array([
+            nb_dict[type][row],
+            dt_dict[type][row],
+            rf_dict[type][row]])
+        ranking.append(rank(array, type))
+    print_table(transpose(table), headers, ranking)
     # STATISTICS
     stat_table = [
         ["avg", "std"],
@@ -103,17 +124,10 @@ for type in table_types:
         [np.around(np.mean(rf_dict[type]), 4), np.around(np.std(rf_dict[type]), 4)]]
     stat_table = transpose(stat_table)
     # FRIEDMAN TEST
-    ranking = []
-    for row in range(10):
-        array = np.array([
-            nb_dict[type][row],
-            dt_dict[type][row],
-            rf_dict[type][row]])
-        ranking.append(rank(array))
     ranking_avg = [np.average(col) for col in np.transpose(ranking)]
     ranking_avg.insert(0, "rank")
     stat_table.append(ranking_avg)
-    print_table(stat_table, headers)
+    print_table(stat_table, headers, None)
 
     # NEMENYI TEST
     # Number of algorithms.
